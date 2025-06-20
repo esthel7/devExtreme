@@ -1,3 +1,28 @@
 .page {
   background-color: white;
 }
+
+.inventoryBox {
+  display: flex;
+  margin: 5px;
+  margin-left: 10px;
+  gap: 10px;
+}
+
+.inventorySection {
+  border: 1px solid purple;
+  padding: 5px;
+  min-width: 150px;
+}
+
+.inventoryItem {
+  border: 1px solid orange;
+  cursor: grab;
+  margin: 5px;
+
+  /* prevent text drag */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
