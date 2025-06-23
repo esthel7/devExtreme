@@ -23,6 +23,8 @@ export default function RootLayout({
       <br />
       <Link href="/bar/drill-down">Drill Down Bar</Link>
       <br />
+      <Link href="/bar/full-stacked">Full Stacked Bar</Link>
+      <br />
       {children}
     </>
   );
