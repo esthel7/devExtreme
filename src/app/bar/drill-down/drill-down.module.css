@@ -1,0 +1,10 @@
+.chartBox {
+  position: relative;
+}
+
+.backButton {
+  position: absolute;
+  top: 0px;
+  padding: 5px;
+  cursor: pointer;
+}
