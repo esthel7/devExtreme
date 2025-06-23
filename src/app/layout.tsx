@@ -30,6 +30,8 @@ export default function RootLayout({
         <br />
         <Link href="/bar">Bar</Link>
         <br />
+        <Link href="/doughnut">Doughnut</Link>
+        <br />
         <Link href="/">Home</Link>
         <br />
         {children}
