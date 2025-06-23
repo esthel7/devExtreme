@@ -19,6 +19,8 @@ export default function RootLayout({
       <br />
       <Link href="/bar/side-by-side">Side By Side Bar</Link>
       <br />
+      <Link href="/bar/stacked">Stacked Bar</Link>
+      <br />
       {children}
     </>
   );
