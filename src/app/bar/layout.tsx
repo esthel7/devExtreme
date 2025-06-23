@@ -21,6 +21,8 @@ export default function RootLayout({
       <br />
       <Link href="/bar/stacked">Stacked Bar</Link>
       <br />
+      <Link href="/bar/drill-down">Drill Down Bar</Link>
+      <br />
       {children}
     </>
   );
