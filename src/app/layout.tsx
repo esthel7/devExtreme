@@ -34,6 +34,8 @@ export default function RootLayout({
         <br />
         <Link href="/line">Line</Link>
         <br />
+        <Link href="/tree">Tree</Link>
+        <br />
         <Link href="/">Home</Link>
         <br />
         {children}
