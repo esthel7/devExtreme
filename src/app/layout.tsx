@@ -36,6 +36,8 @@ export default function RootLayout({
         <br />
         <Link href="/tree">Tree</Link>
         <br />
+        <Link href="/financial">Financial</Link>
+        <br />
         <Link href="/">Home</Link>
         <br />
         {children}
