@@ -86,35 +86,64 @@ export default function Doughnut() {
       const from = e.dataTransfer.getData('from');
 
       if (from === to) return; // move to same area
+      if (
+        to === 'value' &&
+        typeof excel[0][inventory.current[item]] !== 'number'
+      ) {
+        alert('value값은 숫자여야 합니다.');
+        return;
+      }
 
-      if (from === 'unselected') {
-        if (
-          to === 'value' &&
-          typeof excel[1][inventory.current[item]] !== 'number'
-        ) {
-          alert('value값은 숫자여야 합니다.');
-          return;
-        }
-        setRemainInventory(prev => {
-          const newRemainInventory = { ...prev };
-          delete newRemainInventory[item];
-          return newRemainInventory;
-        });
-        if (to === 'category')
+      switch (to) {
+        case 'unselected':
+          setRemainInventory(prev => ({
+            ...prev,
+            [item]: inventory.current[item]
+          }));
+          break;
+        case 'category':
+          if (Object.keys(category).length)
+            setRemainInventory(prev => ({
+              ...prev,
+              [Object.keys(category)[0]]:
+                inventory.current[Object.keys(category)[0]]
+            }));
           setCategory({
             [String(item)]: String(inventory.current[item])
           });
-        else
+          break;
+        case 'value':
+          if (Object.keys(value).length)
+            setRemainInventory(prev => ({
+              ...prev,
+              [Object.keys(value)[0]]: inventory.current[Object.keys(value)[0]]
+            }));
           setValue({
             [String(item)]: Number(inventory.current[item])
           });
-      } else {
-        setRemainInventory(prev => ({
-          ...prev,
-          [item]: inventory.current[item]
-        }));
-        if (from === 'category') setCategory({});
-        else setValue({});
+          break;
+        default:
+          console.error('error');
+          break;
+      }
+
+      switch (from) {
+        case 'unselected':
+          setRemainInventory(prev => {
+            const newRemainInventory = { ...prev };
+            delete newRemainInventory[item];
+            return newRemainInventory;
+          });
+          break;
+        case 'category':
+          setCategory({});
+          break;
+        case 'value':
+          setValue({});
+          break;
+        default:
+          console.error('error');
+          break;
       }
     };
 

@@ -68,35 +68,62 @@ export default function Bar() {
       const from = e.dataTransfer.getData('from');
 
       if (from === to) return; // move to same area
+      if (to === 'y' && typeof excel[0][inventory.current[item]] !== 'number') {
+        alert('y값은 숫자여야 합니다.');
+        return;
+      }
 
-      if (from === 'unselected') {
-        if (
-          to === 'y' &&
-          typeof excel[1][inventory.current[item]] !== 'number'
-        ) {
-          alert('y값은 숫자여야 합니다.');
-          return;
-        }
-        setRemainInventory(prev => {
-          const newRemainInventory = { ...prev };
-          delete newRemainInventory[item];
-          return newRemainInventory;
-        });
-        if (to === 'x')
+      switch (to) {
+        case 'unselected':
+          setRemainInventory(prev => ({
+            ...prev,
+            [item]: inventory.current[item]
+          }));
+          break;
+        case 'x':
+          if (Object.keys(xInventory).length)
+            setRemainInventory(prev => ({
+              ...prev,
+              [Object.keys(xInventory)[0]]:
+                inventory.current[Object.keys(xInventory)[0]]
+            }));
           setXInventory({
             [String(item)]: String(inventory.current[item])
           });
-        else
+          break;
+        case 'y':
+          if (Object.keys(yInventory).length)
+            setRemainInventory(prev => ({
+              ...prev,
+              [Object.keys(yInventory)[0]]:
+                inventory.current[Object.keys(yInventory)[0]]
+            }));
           setYInventory({
             [String(item)]: Number(inventory.current[item])
           });
-      } else {
-        setRemainInventory(prev => ({
-          ...prev,
-          [item]: inventory.current[item]
-        }));
-        if (from === 'x') setXInventory({});
-        else setYInventory({});
+          break;
+        default:
+          console.error('error');
+          break;
+      }
+
+      switch (from) {
+        case 'unselected':
+          setRemainInventory(prev => {
+            const newRemainInventory = { ...prev };
+            delete newRemainInventory[item];
+            return newRemainInventory;
+          });
+          break;
+        case 'x':
+          setXInventory({});
+          break;
+        case 'y':
+          setYInventory({});
+          break;
+        default:
+          console.error('error');
+          break;
       }
     };
 
