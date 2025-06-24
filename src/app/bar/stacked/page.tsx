@@ -55,8 +55,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (!Object.keys(xInventory).length || !Object.keys(yInventory).length)
+    if (!Object.keys(xInventory).length || !Object.keys(yInventory).length) {
+      setDataSource([]);
       return;
+    }
     const xkey = Object.keys(xInventory)[0];
     const ykeys = Object.keys(yInventory);
     const format: Record<string, string | number>[] = [];

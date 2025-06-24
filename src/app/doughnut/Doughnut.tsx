@@ -53,7 +53,10 @@ export default function Doughnut() {
   };
 
   useEffect(() => {
-    if (!Object.keys(category).length || !Object.keys(value).length) return;
+    if (!Object.keys(category).length || !Object.keys(value).length) {
+      setDataSource([]);
+      return;
+    }
     const xkey = Object.keys(category)[0];
     const ykey = Object.keys(value)[0];
     const format: Record<string, string | number>[] = [];

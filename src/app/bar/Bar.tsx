@@ -45,8 +45,10 @@ export default function Bar() {
   };
 
   useEffect(() => {
-    if (!Object.keys(xInventory).length || !Object.keys(yInventory).length)
+    if (!Object.keys(xInventory).length || !Object.keys(yInventory).length) {
+      setDataSource([]);
       return;
+    }
     const xkey = Object.keys(xInventory)[0];
     const ykey = Object.keys(yInventory)[0];
     setDataSource(
