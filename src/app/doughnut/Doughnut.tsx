@@ -168,7 +168,6 @@ export default function Doughnut() {
       <div className={styles.inventoryBox}>
         <div
           className={styles.inventorySection}
-          draggable
           onDrop={e => onDrop(e, 'unselected')}
           onDragOver={onDragOver}
         >
