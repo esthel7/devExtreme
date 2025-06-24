@@ -32,6 +32,8 @@ export default function RootLayout({
         <br />
         <Link href="/doughnut">Doughnut</Link>
         <br />
+        <Link href="/line">Line</Link>
+        <br />
         <Link href="/">Home</Link>
         <br />
         {children}
