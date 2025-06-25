@@ -13,7 +13,7 @@ import Chart, {
   Export,
   Tooltip
 } from 'devextreme-react/chart';
-import * as XLSX from 'xlsx';
+import { handleFileUpload } from '@/utils/handleFileUpload';
 import styles from '@/app/page.module.css';
 
 export default function Financial() {
@@ -30,48 +30,6 @@ export default function Financial() {
   const [dataSource, setDataSource] = useState<
     Record<string, string | number | Date>[]
   >([]);
-
-  const formatCell = (value: unknown) => {
-    if (!isNaN(Number(value)) && typeof value === 'string')
-      return Number(value);
-    if (value instanceof Date) return value.toISOString().split('T')[0];
-    return value as string;
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = evt => {
-      const binaryStr = evt.target?.result;
-      const workbook = XLSX.read(binaryStr, { type: 'binary' });
-
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-
-      inventory.current = {};
-      const jsonData: (string | number)[][] = XLSX.utils.sheet_to_json(sheet, {
-        header: 1,
-        cellDates: true,
-        raw: false
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
-      const originalInventory = jsonData.shift() as string[];
-      originalInventory.forEach((item, index) => {
-        inventory.current[item] = index;
-      });
-      setRemainInventory(inventory.current);
-      const refined = jsonData.map(row =>
-        row.map(cell => formatCell(cell))
-      ) as (string | number)[][];
-      setExcel(refined);
-      console.log('check excel data', refined);
-    };
-
-    reader.readAsArrayBuffer(file);
-  };
 
   useEffect(() => {
     if (
@@ -392,7 +350,15 @@ Low: ${arg.lowValue}<br/>`
       <input
         type="file"
         accept=".xlsx, .xls"
-        onChange={handleFileUpload}
+        onChange={e =>
+          handleFileUpload(e, inventory, setRemainInventory, setExcel, [
+            setXInventory,
+            setOpen,
+            setClose,
+            setHigh,
+            setLow
+          ])
+        }
         style={{
           height: '100px',
           border: '1px solid blue',

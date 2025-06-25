@@ -11,7 +11,7 @@ import {
   ZoomAndPan
 } from 'devextreme-react/chart';
 import { DragEvent, useEffect, useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
+import { handleFileUpload } from '@/utils/handleFileUpload';
 import styles from '@/app/page.module.css';
 
 export default function Home() {
@@ -25,33 +25,6 @@ export default function Home() {
   const [dataSource, setDataSource] = useState<
     Record<string, string | number>[]
   >([]);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-
-    reader.onload = evt => {
-      const binaryStr = evt.target?.result;
-      const workbook = XLSX.read(binaryStr, { type: 'binary' });
-
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-
-      inventory.current = {};
-      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      const originalInventory = jsonData.shift() as string[];
-      originalInventory.forEach((item, index) => {
-        inventory.current[item] = index;
-      });
-      setRemainInventory(inventory.current);
-      setExcel(jsonData as (string | number)[][]);
-      console.log('check excel data', jsonData);
-    };
-
-    reader.readAsArrayBuffer(file);
-  };
 
   useEffect(() => {
     if (!Object.keys(xInventory).length || !Object.keys(yInventory).length) {
@@ -236,7 +209,12 @@ export default function Home() {
       <input
         type="file"
         accept=".xlsx, .xls"
-        onChange={handleFileUpload}
+        onChange={e =>
+          handleFileUpload(e, inventory, setRemainInventory, setExcel, [
+            setXInventory,
+            setYInventory
+          ])
+        }
         style={{
           height: '100px',
           border: '1px solid blue',
