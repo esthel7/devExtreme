@@ -38,6 +38,8 @@ export default function RootLayout({
         <br />
         <Link href="/financial">Financial</Link>
         <br />
+        <Link href="/range">Range</Link>
+        <br />
         <Link href="/">Home</Link>
         <br />
         {children}
