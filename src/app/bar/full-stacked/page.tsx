@@ -25,6 +25,8 @@ export default function Home() {
   const [dataSource, setDataSource] = useState<
     Record<string, string | number>[]
   >([]);
+  const dragStartIdx = useRef<number>(-1);
+  const dragEndIdx = useRef<number>(-1);
 
   useEffect(() => {
     if (!Object.keys(xInventory).length || !Object.keys(yInventory).length) {
@@ -67,18 +69,65 @@ export default function Home() {
       const item = e.dataTransfer.getData('item');
       const from = e.dataTransfer.getData('from');
 
-      if (from === to) return; // move to same area
+      if (from === to) {
+        if (
+          dragStartIdx.current === -1 ||
+          dragEndIdx.current === -1 ||
+          dragStartIdx.current === dragEndIdx.current
+        ) {
+          dragStartIdx.current = -1;
+          dragEndIdx.current = -1;
+          return;
+        }
+
+        const splitIdx =
+          dragStartIdx.current > dragEndIdx.current
+            ? dragEndIdx.current
+            : dragEndIdx.current - 1;
+        const [changeInventory, setChangeInventory] =
+          from === 'unselected'
+            ? [remainInventory, setRemainInventory]
+            : from === 'x'
+              ? [xInventory, setXInventory]
+              : [yInventory, setYInventory];
+        const prevInventory = { ...changeInventory };
+        delete prevInventory[item];
+        const total = Object.entries(prevInventory);
+        const left = Object.fromEntries(total.slice(0, splitIdx));
+        const right = Object.fromEntries(total.slice(splitIdx));
+        setChangeInventory({
+          ...left,
+          [item]: inventory.current[item],
+          ...right
+        });
+        dragStartIdx.current = -1;
+        dragEndIdx.current = -1;
+        return;
+      }
+
       if (to === 'y' && typeof excel[0][inventory.current[item]] !== 'number') {
         alert('y값은 숫자여야 합니다.');
+        dragStartIdx.current = -1;
+        dragEndIdx.current = -1;
         return;
       }
 
       switch (to) {
         case 'unselected':
-          setRemainInventory(prev => ({
-            ...prev,
-            [item]: inventory.current[item]
-          }));
+          if (dragEndIdx.current !== -1) {
+            const total = Object.entries(remainInventory);
+            const left = Object.fromEntries(total.slice(0, dragEndIdx.current));
+            const right = Object.fromEntries(total.slice(dragEndIdx.current));
+            setRemainInventory({
+              ...left,
+              [item]: inventory.current[item],
+              ...right
+            });
+          } else
+            setRemainInventory(prev => ({
+              ...prev,
+              [item]: inventory.current[item]
+            }));
           break;
         case 'x':
           if (Object.keys(xInventory).length)
@@ -92,10 +141,20 @@ export default function Home() {
           });
           break;
         case 'y':
-          setYInventory(prev => ({
-            ...prev,
-            [item]: inventory.current[item]
-          }));
+          if (dragEndIdx.current !== -1) {
+            const total = Object.entries(yInventory);
+            const left = Object.fromEntries(total.slice(0, dragEndIdx.current));
+            const right = Object.fromEntries(total.slice(dragEndIdx.current));
+            setYInventory({
+              ...left,
+              [item]: inventory.current[item],
+              ...right
+            });
+          } else
+            setYInventory(prev => ({
+              ...prev,
+              [item]: inventory.current[item]
+            }));
           break;
         default:
           console.error('error');
@@ -124,19 +183,26 @@ export default function Home() {
           console.error('error');
           break;
       }
+
+      dragStartIdx.current = -1;
+      dragEndIdx.current = -1;
     };
 
     const onDragOver = (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
     };
 
+    const onDragEnter = (idx: number) => (dragEndIdx.current = idx);
+
     const onDragStart = (
       e: DragEvent<HTMLDivElement>,
       item: string,
-      from: 'unselected' | 'x' | 'y'
+      from: 'unselected' | 'x' | 'y',
+      idx: number
     ) => {
       e.dataTransfer.setData('item', item);
       e.dataTransfer.setData('from', from);
+      dragStartIdx.current = idx;
     };
 
     return (
@@ -147,12 +213,13 @@ export default function Home() {
           onDragOver={onDragOver}
         >
           <h2>unSelected</h2>
-          {Object.keys(remainInventory).map(item => (
+          {Object.keys(remainInventory).map((item, idx) => (
             <div
               key={item}
               className={styles.inventoryItem}
               draggable
-              onDragStart={e => onDragStart(e, item, 'unselected')}
+              onDragStart={e => onDragStart(e, item, 'unselected', idx)}
+              onDragEnter={() => onDragEnter(idx)}
             >
               {item}
             </div>
@@ -165,12 +232,13 @@ export default function Home() {
             onDragOver={onDragOver}
           >
             <h2>x</h2>
-            {Object.keys(xInventory).map(item => (
+            {Object.keys(xInventory).map((item, idx) => (
               <div
                 key={item}
                 className={styles.inventoryItem}
                 draggable
-                onDragStart={e => onDragStart(e, item, 'x')}
+                onDragStart={e => onDragStart(e, item, 'x', idx)}
+                onDragEnter={() => onDragEnter(idx)}
               >
                 {item}
               </div>
@@ -182,12 +250,13 @@ export default function Home() {
             onDragOver={onDragOver}
           >
             <h2>y</h2>
-            {Object.keys(yInventory).map(item => (
+            {Object.keys(yInventory).map((item, idx) => (
               <div
                 key={item}
                 className={styles.inventoryItem}
                 draggable
-                onDragStart={e => onDragStart(e, item, 'y')}
+                onDragStart={e => onDragStart(e, item, 'y', idx)}
+                onDragEnter={() => onDragEnter(idx)}
               >
                 {item}
               </div>

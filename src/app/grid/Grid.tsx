@@ -24,6 +24,8 @@ export default function Grid() {
   const [dataSource, setDataSource] = useState<
     Record<string, string | number>[]
   >([]);
+  const dragStartIdx = useRef<number>(-1);
+  const dragEndIdx = useRef<number>(-1);
 
   useEffect(() => {
     if (!excel.length) return;
@@ -47,7 +49,39 @@ export default function Grid() {
       const item = e.dataTransfer.getData('item');
       const from = e.dataTransfer.getData('from');
 
-      if (from === to) return; // move to same area
+      if (from === to) {
+        if (
+          dragStartIdx.current === -1 ||
+          dragEndIdx.current === -1 ||
+          dragStartIdx.current === dragEndIdx.current
+        ) {
+          dragStartIdx.current = -1;
+          dragEndIdx.current = -1;
+          return;
+        }
+
+        const splitIdx =
+          dragStartIdx.current > dragEndIdx.current
+            ? dragEndIdx.current
+            : dragEndIdx.current - 1;
+        const [changeInventory, setChangeInventory] =
+          from === 'unselected'
+            ? [remainInventory, setRemainInventory]
+            : [selectedInventory, setSelectedInventory];
+        const prevInventory = { ...changeInventory };
+        delete prevInventory[item];
+        const total = Object.entries(prevInventory);
+        const left = Object.fromEntries(total.slice(0, splitIdx));
+        const right = Object.fromEntries(total.slice(splitIdx));
+        setChangeInventory({
+          ...left,
+          [item]: inventory.current[item],
+          ...right
+        });
+        dragStartIdx.current = -1;
+        dragEndIdx.current = -1;
+        return;
+      }
 
       if (from === 'unselected') {
         setRemainInventory(prev => {
@@ -55,34 +89,61 @@ export default function Grid() {
           delete newRemainInventory[item];
           return newRemainInventory;
         });
-        setSelectedInventory(prev => ({
-          ...prev,
-          [item]: inventory.current[item]
-        }));
+        if (dragEndIdx.current !== -1) {
+          const total = Object.entries(selectedInventory);
+          const left = Object.fromEntries(total.slice(0, dragEndIdx.current));
+          const right = Object.fromEntries(total.slice(dragEndIdx.current));
+          setSelectedInventory({
+            ...left,
+            [item]: inventory.current[item],
+            ...right
+          });
+        } else
+          setSelectedInventory(prev => ({
+            ...prev,
+            [item]: inventory.current[item]
+          }));
       } else {
-        setRemainInventory(prev => ({
-          ...prev,
-          [item]: inventory.current[item]
-        }));
+        if (dragEndIdx.current !== -1) {
+          const total = Object.entries(remainInventory);
+          const left = Object.fromEntries(total.slice(0, dragEndIdx.current));
+          const right = Object.fromEntries(total.slice(dragEndIdx.current));
+          setRemainInventory({
+            ...left,
+            [item]: inventory.current[item],
+            ...right
+          });
+        } else
+          setRemainInventory(prev => ({
+            ...prev,
+            [item]: inventory.current[item]
+          }));
         setSelectedInventory(prev => {
           const newSelectedInventory = { ...prev };
           delete newSelectedInventory[item];
           return newSelectedInventory;
         });
       }
+
+      dragStartIdx.current = -1;
+      dragEndIdx.current = -1;
     };
 
     const onDragOver = (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
     };
 
+    const onDragEnter = (idx: number) => (dragEndIdx.current = idx);
+
     const onDragStart = (
       e: DragEvent<HTMLDivElement>,
       item: string,
-      from: 'unselected' | 'selected'
+      from: 'unselected' | 'selected',
+      idx: number
     ) => {
       e.dataTransfer.setData('item', item);
       e.dataTransfer.setData('from', from);
+      dragStartIdx.current = idx;
     };
 
     return (
@@ -93,12 +154,13 @@ export default function Grid() {
           onDragOver={onDragOver}
         >
           <h2>unSelected</h2>
-          {Object.keys(remainInventory).map(item => (
+          {Object.keys(remainInventory).map((item, idx) => (
             <div
               key={item}
               className={styles.inventoryItem}
               draggable
-              onDragStart={e => onDragStart(e, item, 'unselected')}
+              onDragStart={e => onDragStart(e, item, 'unselected', idx)}
+              onDragEnter={() => onDragEnter(idx)}
             >
               {item}
             </div>
@@ -110,12 +172,13 @@ export default function Grid() {
           onDragOver={onDragOver}
         >
           <h2>selected</h2>
-          {Object.keys(selectedInventory).map(item => (
+          {Object.keys(selectedInventory).map((item, idx) => (
             <div
               key={item}
               className={styles.inventoryItem}
               draggable
-              onDragStart={e => onDragStart(e, item, 'selected')}
+              onDragStart={e => onDragStart(e, item, 'selected', idx)}
+              onDragEnter={() => onDragEnter(idx)}
             >
               {item}
             </div>

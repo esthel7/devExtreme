@@ -29,6 +29,8 @@ export default function Point() {
   const [dataSource, setDataSource] = useState<
     Record<string, string | number | Date>[]
   >([]);
+  const dragStartIdx = useRef<number>(-1);
+  const dragEndIdx = useRef<number>(-1);
 
   useEffect(() => {
     if (
@@ -67,19 +69,69 @@ export default function Point() {
       const item = e.dataTransfer.getData('item');
       const from = e.dataTransfer.getData('from');
 
-      if (from === to) return; // move to same area
+      if (from === to) {
+        if (
+          dragStartIdx.current === -1 ||
+          dragEndIdx.current === -1 ||
+          dragStartIdx.current === dragEndIdx.current
+        ) {
+          dragStartIdx.current = -1;
+          dragEndIdx.current = -1;
+          return;
+        }
+
+        const splitIdx =
+          dragStartIdx.current > dragEndIdx.current
+            ? dragEndIdx.current
+            : dragEndIdx.current - 1;
+        const [changeInventory, setChangeInventory] =
+          from === 'unselected'
+            ? [remainInventory, setRemainInventory]
+            : from === 'x1'
+              ? [x1, setX1]
+              : from === 'y1'
+                ? [y1, setY1]
+                : from === 'x2'
+                  ? [x2, setX2]
+                  : [y2, setY2];
+        const prevInventory = { ...changeInventory };
+        delete prevInventory[item];
+        const total = Object.entries(prevInventory);
+        const left = Object.fromEntries(total.slice(0, splitIdx));
+        const right = Object.fromEntries(total.slice(splitIdx));
+        setChangeInventory({
+          ...left,
+          [item]: inventory.current[item],
+          ...right
+        });
+        dragStartIdx.current = -1;
+        dragEndIdx.current = -1;
+        return;
+      }
 
       if (typeof excel[0][inventory.current[item]] !== 'number') {
         alert('값은 숫자여야 합니다.');
+        dragStartIdx.current = -1;
+        dragEndIdx.current = -1;
         return;
       }
 
       switch (to) {
         case 'unselected':
-          setRemainInventory(prev => ({
-            ...prev,
-            [item]: inventory.current[item]
-          }));
+          if (dragEndIdx.current !== -1) {
+            const total = Object.entries(remainInventory);
+            const left = Object.fromEntries(total.slice(0, dragEndIdx.current));
+            const right = Object.fromEntries(total.slice(dragEndIdx.current));
+            setRemainInventory({
+              ...left,
+              [item]: inventory.current[item],
+              ...right
+            });
+          } else
+            setRemainInventory(prev => ({
+              ...prev,
+              [item]: inventory.current[item]
+            }));
           break;
         case 'x1':
           if (Object.keys(x1).length)
@@ -150,19 +202,26 @@ export default function Point() {
           console.error('error');
           break;
       }
+
+      dragStartIdx.current = -1;
+      dragEndIdx.current = -1;
     };
 
     const onDragOver = (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
     };
 
+    const onDragEnter = (idx: number) => (dragEndIdx.current = idx);
+
     const onDragStart = (
       e: DragEvent<HTMLDivElement>,
       item: string,
-      from: 'unselected' | 'x1' | 'y1' | 'x2' | 'y2'
+      from: 'unselected' | 'x1' | 'y1' | 'x2' | 'y2',
+      idx: number
     ) => {
       e.dataTransfer.setData('item', item);
       e.dataTransfer.setData('from', from);
+      dragStartIdx.current = idx;
     };
 
     return (
@@ -173,12 +232,13 @@ export default function Point() {
           onDragOver={onDragOver}
         >
           <h2>unSelected</h2>
-          {Object.keys(remainInventory).map(item => (
+          {Object.keys(remainInventory).map((item, idx) => (
             <div
               key={item}
               className={styles.inventoryItem}
               draggable
-              onDragStart={e => onDragStart(e, item, 'unselected')}
+              onDragStart={e => onDragStart(e, item, 'unselected', idx)}
+              onDragEnter={() => onDragEnter(idx)}
             >
               {item}
             </div>
@@ -191,12 +251,13 @@ export default function Point() {
             onDragOver={onDragOver}
           >
             <h2>x1</h2>
-            {Object.keys(x1).map(item => (
+            {Object.keys(x1).map((item, idx) => (
               <div
                 key={item}
                 className={styles.inventoryItem}
                 draggable
-                onDragStart={e => onDragStart(e, item, 'x1')}
+                onDragStart={e => onDragStart(e, item, 'x1', idx)}
+                onDragEnter={() => onDragEnter(idx)}
               >
                 {item}
               </div>
@@ -208,12 +269,13 @@ export default function Point() {
             onDragOver={onDragOver}
           >
             <h2>y1</h2>
-            {Object.keys(y1).map(item => (
+            {Object.keys(y1).map((item, idx) => (
               <div
                 key={item}
                 className={styles.inventoryItem}
                 draggable
-                onDragStart={e => onDragStart(e, item, 'y1')}
+                onDragStart={e => onDragStart(e, item, 'y1', idx)}
+                onDragEnter={() => onDragEnter(idx)}
               >
                 {item}
               </div>
@@ -225,12 +287,13 @@ export default function Point() {
             onDragOver={onDragOver}
           >
             <h2>x2</h2>
-            {Object.keys(x2).map(item => (
+            {Object.keys(x2).map((item, idx) => (
               <div
                 key={item}
                 className={styles.inventoryItem}
                 draggable
-                onDragStart={e => onDragStart(e, item, 'x2')}
+                onDragStart={e => onDragStart(e, item, 'x2', idx)}
+                onDragEnter={() => onDragEnter(idx)}
               >
                 {item}
               </div>
@@ -242,12 +305,13 @@ export default function Point() {
             onDragOver={onDragOver}
           >
             <h2>y2</h2>
-            {Object.keys(y2).map(item => (
+            {Object.keys(y2).map((item, idx) => (
               <div
                 key={item}
                 className={styles.inventoryItem}
                 draggable
-                onDragStart={e => onDragStart(e, item, 'y2')}
+                onDragStart={e => onDragStart(e, item, 'y2', idx)}
+                onDragEnter={() => onDragEnter(idx)}
               >
                 {item}
               </div>
