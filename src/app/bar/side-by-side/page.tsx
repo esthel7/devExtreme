@@ -21,6 +21,7 @@ import {
   Dispatch,
   SetStateAction
 } from 'react';
+import { calculateNumber } from '@/utils/calculateNumber';
 import { handleFileUpload } from '@/utils/handleFileUpload';
 import styles from '@/app/page.module.css';
 
@@ -97,77 +98,10 @@ export default function Home() {
 
     const final: Record<string, string | number>[] = format.map(item => {
       ykeys.forEach(key => {
-        item[key] = item[key] as number[];
-        const Sum = item[key].reduce((a, b) => a + b, 0);
-        const Len = item[key].length;
-        const Avg = Sum / Len;
-        switch (yInventory[key][2]) {
-          case '합계':
-            item[key] = Sum;
-            break;
-          case '카운트':
-            item[key] = Len;
-            break;
-          case '고유 카운트':
-            item[key] = new Set(item[key]).size;
-            break;
-          case '최소값':
-            item[key] = Math.min(...item[key]);
-            break;
-          case '최대값':
-            item[key] = Math.max(...item[key]);
-            break;
-          case '평균':
-            item[key] = Avg;
-            break;
-          case '표준편차':
-            item[key] = Math.sqrt(
-              item[key].reduce((a, b) => a + (b - Avg) ** 2, 0) / (Len - 1)
-            );
-            break;
-          case '모집단 표준편차':
-            item[key] = Math.sqrt(
-              item[key].reduce((a, b) => a + (b - Avg) ** 2, 0) / Len
-            );
-            break;
-          case '분산':
-            item[key] =
-              item[key].reduce((a, b) => a + (b - Avg) ** 2, 0) / (Len - 1);
-            break;
-          case '모집단 분산':
-            item[key] = item[key].reduce((a, b) => a + (b - Avg) ** 2, 0) / Len;
-            break;
-          case '중간값':
-            if (Len === 0) {
-              item[key] = 0;
-              break;
-            }
-            if (Len === 1) {
-              item[key] = item[key][0];
-              break;
-            }
-            const sorted = item[key].sort((a, b) => a - b);
-            item[key] =
-              Len % 2 === 0
-                ? (sorted[Math.floor(Len / 2) - 1] +
-                    sorted[Math.floor(Len / 2)]) /
-                  2
-                : sorted[Math.floor(Len / 2)];
-            break;
-          case '최빈값':
-            const freq: Record<number, number> = {};
-            for (const num of item[key]) {
-              freq[num] = (freq[num] || 0) + 1;
-            }
-            const maxFreq = Math.max(...Object.values(freq));
-            const modes = Object.entries(freq)
-              .filter(([, v]) => v === maxFreq)
-              .map(([k]) => Number(k));
-            item[key] = modes[0];
-            break;
-          default:
-            console.error('error');
-        }
+        item[key] = calculateNumber(
+          yInventory[key][2] as PropertyType,
+          item[key] as number[]
+        );
       });
       return item as Record<string, string | number>;
     });
