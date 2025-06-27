@@ -9,6 +9,7 @@ import {
   Label,
   Legend,
   Series,
+  Tooltip,
   ZoomAndPan
 } from 'devextreme-react/chart';
 import { DragEvent, ChangeEvent, useEffect, useRef, useState } from 'react';
@@ -38,6 +39,9 @@ export default function Home() {
   const [yInventory, setYInventory] = useState<
     Record<string, (number | string)[]>
   >({});
+  const [seriesInventory, setSeriesInventory] = useState<
+    Record<string, string>
+  >({});
   const [remainInventory, setRemainInventory] = useState<
     Record<string, number>
   >({});
@@ -55,7 +59,9 @@ export default function Home() {
       setDataSource([]);
       return;
     }
-    const xkeys = Object.keys(xInventory);
+    const xkeys = Object.keys(seriesInventory).concat(
+      ...Object.keys(xInventory)
+    );
     const ykeys = Object.keys(yInventory);
     const format: Record<string, string | number | number[]>[] = [];
     const match: Record<string, number> = {};
@@ -160,12 +166,12 @@ export default function Home() {
     console.log('check graph data', final);
     setDataSource(final);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [xInventory, yInventory]);
+  }, [xInventory, yInventory, seriesInventory]);
 
   function InventoryBox() {
     const onDrop = (
       e: DragEvent<HTMLDivElement>,
-      to: 'unselected' | 'x' | 'y'
+      to: 'unselected' | 'x' | 'y' | 'series'
     ) => {
       setPropertyChange('');
       const item = e.dataTransfer.getData('item');
@@ -191,7 +197,9 @@ export default function Home() {
             ? [remainInventory, setRemainInventory]
             : from === 'x'
               ? [xInventory, setXInventory]
-              : [yInventory, setYInventory];
+              : from === 'y'
+                ? [yInventory, setYInventory]
+                : [seriesInventory, setSeriesInventory];
         const prevInventory = { ...changeInventory };
         delete prevInventory[item];
         const total = Object.entries(prevInventory);
@@ -263,6 +271,22 @@ export default function Home() {
               [item]: [item, inventory.current[item], '합계']
             }));
           break;
+        case 'series':
+          if (dragEndIdx.current !== -1) {
+            const total = Object.entries(seriesInventory);
+            const left = Object.fromEntries(total.slice(0, dragEndIdx.current));
+            const right = Object.fromEntries(total.slice(dragEndIdx.current));
+            setSeriesInventory({
+              ...left,
+              [item]: String(inventory.current[item]),
+              ...right
+            });
+          } else
+            setSeriesInventory(prev => ({
+              ...prev,
+              [item]: String(inventory.current[item])
+            }));
+          break;
         default:
           console.error('error');
           break;
@@ -290,6 +314,13 @@ export default function Home() {
             return newRemainInventory;
           });
           break;
+        case 'series':
+          setSeriesInventory(prev => {
+            const newRemainInventory = { ...prev };
+            delete newRemainInventory[item];
+            return newRemainInventory;
+          });
+          break;
         default:
           console.error('error');
           break;
@@ -308,7 +339,7 @@ export default function Home() {
     const onDragStart = (
       e: DragEvent<HTMLDivElement>,
       item: string,
-      from: 'unselected' | 'x' | 'y',
+      from: 'unselected' | 'x' | 'y' | 'series',
       idx: number
     ) => {
       e.dataTransfer.setData('item', item);
@@ -421,6 +452,30 @@ export default function Home() {
               style={{ height: '5px' }}
             />
           </div>
+          <div
+            className={styles.inventorySection}
+            onDrop={e => onDrop(e, 'series')}
+            onDragOver={onDragOver}
+          >
+            <h2>series</h2>
+            {Object.keys(seriesInventory).map((item, idx) => (
+              <div
+                key={item}
+                className={styles.inventoryItem}
+                draggable
+                onDragStart={e => onDragStart(e, item, 'series', idx)}
+                onDragEnter={() => onDragEnter(idx)}
+              >
+                {item}
+              </div>
+            ))}
+            <div
+              onDragEnter={() =>
+                onDragEnter(Object.keys(seriesInventory).length)
+              }
+              style={{ height: '5px' }}
+            />
+          </div>
         </div>
         {propertyChange !== '' ? (
           <div>
@@ -457,6 +512,24 @@ export default function Home() {
     );
   }
 
+  function customizeTooltip(arg: {
+    argumentText: string;
+    seriesName: string;
+    valueText: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    point: any;
+  }) {
+    const keys = Object.keys(arg.point.data);
+    const texts = keys
+      .map(item => `<br />${item}: ${arg.point.data[item]}`)
+      .join('');
+    return Object.keys(seriesInventory).length
+      ? { text: `${texts}` }
+      : {
+          text: `${arg.argumentText}<br />${arg.seriesName}: ${arg.valueText} `
+        };
+  }
+
   return (
     <>
       <input
@@ -465,7 +538,8 @@ export default function Home() {
         onChange={e =>
           handleFileUpload(e, inventory, setRemainInventory, setExcel, [
             setXInventory,
-            setYInventory
+            setYInventory,
+            setSeriesInventory
           ])
         }
         style={{
@@ -477,10 +551,20 @@ export default function Home() {
       {Object.keys(inventory.current).length > 0 ? <InventoryBox /> : null}
       <Chart id="chart" title="side by side bar" dataSource={dataSource}>
         <CommonSeriesSettings
-          argumentField={Object.keys(xInventory).join('/')}
+          argumentField={Object.keys(xInventory)
+            .concat(Object.keys(seriesInventory))
+            .join('/')}
           type="bar"
-          hoverMode="allArgumentPoints"
-          selectionMode="allArgumentPoints"
+          hoverMode={
+            Object.keys(seriesInventory).length
+              ? 'allArgumentPoints'
+              : 'onlyPoint'
+          }
+          selectionMode={
+            Object.keys(seriesInventory).length
+              ? 'allArgumentPoints'
+              : 'onlyPoint'
+          }
         >
           {/* individual values in chart */}
           <Label visible={true}>
@@ -492,7 +576,9 @@ export default function Home() {
           <Series
             key={item}
             valueField={item} // y value
-            argumentField={Object.keys(xInventory).join('/')} // x value
+            argumentField={Object.keys(seriesInventory)
+              .concat(Object.keys(xInventory))
+              .join('/')} // x value
             name={yInventory[item][0]}
           />
         ))}
@@ -509,6 +595,7 @@ export default function Home() {
         {/* location of chart property */}
         <Legend verticalAlignment="bottom" horizontalAlignment="center" />
 
+        <Tooltip enabled={true} customizeTooltip={customizeTooltip} />
         <ZoomAndPan argumentAxis="both" valueAxis="both" />
         <Export enabled={true} />
       </Chart>
