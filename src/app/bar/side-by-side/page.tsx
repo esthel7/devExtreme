@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ArgumentAxis,
   Chart,
   CommonSeriesSettings,
   Export,
@@ -53,21 +54,21 @@ export default function Home() {
       setDataSource([]);
       return;
     }
-    const xkey = Object.keys(xInventory)[0];
+    const xkeys = Object.keys(xInventory);
     const ykeys = Object.keys(yInventory);
     const format: Record<string, string | number | number[]>[] = [];
     const match: Record<string, number> = {};
     let cnt = 0;
     excel.forEach(item => {
       let idx = 0;
-      if (item[inventory.current[xkey]] in match)
-        idx = match[item[inventory.current[xkey]]];
+      const keyword = xkeys.map(key => item[inventory.current[key]]).join('/');
+      if (keyword in match) idx = match[keyword];
       else {
-        match[item[inventory.current[xkey]]] = cnt;
+        match[keyword] = cnt;
         idx = cnt;
         cnt++;
         const newFormat: Record<string, string | number | number[]> = {
-          [xkey]: item[inventory.current[xkey]]
+          [xkeys.join('/')]: keyword
         };
         ykeys.forEach(item => (newFormat[item] = []));
         format.push(newFormat);
@@ -230,15 +231,20 @@ export default function Home() {
             }));
           break;
         case 'x':
-          if (Object.keys(xInventory).length)
-            setRemainInventory(prev => ({
+          if (dragEndIdx.current !== -1) {
+            const total = Object.entries(xInventory);
+            const left = Object.fromEntries(total.slice(0, dragEndIdx.current));
+            const right = Object.fromEntries(total.slice(dragEndIdx.current));
+            setXInventory({
+              ...left,
+              [item]: String(inventory.current[item]),
+              ...right
+            });
+          } else
+            setXInventory(prev => ({
               ...prev,
-              [Object.keys(xInventory)[0]]:
-                inventory.current[Object.keys(xInventory)[0]]
+              [item]: String(inventory.current[item])
             }));
-          setXInventory({
-            [String(item)]: String(inventory.current[item])
-          });
           break;
         case 'y':
           if (dragEndIdx.current !== -1) {
@@ -270,7 +276,11 @@ export default function Home() {
           });
           break;
         case 'x':
-          setXInventory({});
+          setXInventory(prev => {
+            const newRemainInventory = { ...prev };
+            delete newRemainInventory[item];
+            return newRemainInventory;
+          });
           break;
         case 'y':
           setYInventory(prev => {
@@ -429,7 +439,7 @@ export default function Home() {
       {Object.keys(inventory.current).length > 0 ? <InventoryBox /> : null}
       <Chart id="chart" title="side by side bar" dataSource={dataSource}>
         <CommonSeriesSettings
-          argumentField={Object.keys(xInventory)[0]}
+          argumentField={Object.keys(xInventory).join('/')}
           type="bar"
           hoverMode="allArgumentPoints"
           selectionMode="allArgumentPoints"
@@ -444,10 +454,19 @@ export default function Home() {
           <Series
             key={item}
             valueField={item} // y value
-            argumentField={Object.keys(xInventory)[0]} // x value
+            argumentField={Object.keys(xInventory).join('/')} // x value
             name={item}
           />
         ))}
+
+        {/* customize x layer name */}
+        <ArgumentAxis>
+          <Label
+            customizeText={({ valueText }: { valueText: string }) =>
+              `X: ${valueText}`
+            }
+          />
+        </ArgumentAxis>
 
         {/* location of chart property */}
         <Legend verticalAlignment="bottom" horizontalAlignment="center" />
