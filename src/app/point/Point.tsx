@@ -243,6 +243,10 @@ export default function Point() {
               {item}
             </div>
           ))}
+          <div
+            onDragEnter={() => onDragEnter(Object.keys(remainInventory).length)}
+            style={{ height: '5px' }}
+          />
         </div>
         <div>
           <div
@@ -262,6 +266,10 @@ export default function Point() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(x1).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -280,6 +288,10 @@ export default function Point() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(y1).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -298,6 +310,10 @@ export default function Point() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(x2).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -316,6 +332,10 @@ export default function Point() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(y2).length)}
+              style={{ height: '5px' }}
+            />
           </div>
         </div>
       </div>

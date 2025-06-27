@@ -165,6 +165,10 @@ export default function Grid() {
               {item}
             </div>
           ))}
+          <div
+            onDragEnter={() => onDragEnter(Object.keys(remainInventory).length)}
+            style={{ height: '5px' }}
+          />
         </div>
         <div
           className={styles.inventorySection}
@@ -183,6 +187,12 @@ export default function Grid() {
               {item}
             </div>
           ))}
+          <div
+            onDragEnter={() =>
+              onDragEnter(Object.keys(selectedInventory).length)
+            }
+            style={{ height: '5px' }}
+          />
         </div>
       </div>
     );

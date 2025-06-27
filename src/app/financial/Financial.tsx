@@ -300,6 +300,10 @@ export default function Financial() {
               {item}
             </div>
           ))}
+          <div
+            onDragEnter={() => onDragEnter(Object.keys(remainInventory).length)}
+            style={{ height: '5px' }}
+          />
         </div>
         <div>
           <div
@@ -319,6 +323,10 @@ export default function Financial() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(xInventory).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -337,6 +345,10 @@ export default function Financial() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(open).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -355,6 +367,10 @@ export default function Financial() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(close).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -373,6 +389,10 @@ export default function Financial() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(high).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -391,6 +411,10 @@ export default function Financial() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(low).length)}
+              style={{ height: '5px' }}
+            />
           </div>
         </div>
       </div>

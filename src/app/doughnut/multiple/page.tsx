@@ -227,6 +227,10 @@ export default function Home() {
               {item}
             </div>
           ))}
+          <div
+            onDragEnter={() => onDragEnter(Object.keys(remainInventory).length)}
+            style={{ height: '5px' }}
+          />
         </div>
         <div>
           <div
@@ -246,6 +250,10 @@ export default function Home() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(category).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -264,6 +272,10 @@ export default function Home() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(value).length)}
+              style={{ height: '5px' }}
+            />
           </div>
         </div>
       </div>

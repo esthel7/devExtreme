@@ -276,6 +276,10 @@ export default function Range() {
               {item}
             </div>
           ))}
+          <div
+            onDragEnter={() => onDragEnter(Object.keys(remainInventory).length)}
+            style={{ height: '5px' }}
+          />
         </div>
         <div>
           <div
@@ -295,6 +299,10 @@ export default function Range() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(xInventory).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <h5>valueStart, valueEnd</h5>
           <h5>개수는 동일해야 합니다.</h5>
@@ -315,6 +323,10 @@ export default function Range() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(valueStart).length)}
+              style={{ height: '5px' }}
+            />
           </div>
           <div
             className={styles.inventorySection}
@@ -333,6 +345,10 @@ export default function Range() {
                 {item}
               </div>
             ))}
+            <div
+              onDragEnter={() => onDragEnter(Object.keys(valueEnd).length)}
+              style={{ height: '5px' }}
+            />
           </div>
         </div>
       </div>
