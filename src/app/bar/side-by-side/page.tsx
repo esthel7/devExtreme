@@ -10,14 +10,33 @@ import {
   Series,
   ZoomAndPan
 } from 'devextreme-react/chart';
-import { DragEvent, useEffect, useRef, useState } from 'react';
+import { DragEvent, ChangeEvent, useEffect, useRef, useState } from 'react';
 import { handleFileUpload } from '@/utils/handleFileUpload';
 import styles from '@/app/page.module.css';
+
+const NumberProperty = [
+  '합계',
+  '카운트',
+  '고유 카운트',
+  '최소값',
+  '최대값',
+  '평균',
+  '표준편차',
+  '모집단 표준편차',
+  '분산',
+  '모집단 분산',
+  '중간값',
+  '최빈값'
+] as const;
+
+type PropertyType = (typeof NumberProperty)[number];
 
 export default function Home() {
   const inventory = useRef<Record<string, number>>({});
   const [xInventory, setXInventory] = useState<Record<string, string>>({});
-  const [yInventory, setYInventory] = useState<Record<string, number>>({});
+  const [yInventory, setYInventory] = useState<
+    Record<string, (number | string)[]>
+  >({});
   const [remainInventory, setRemainInventory] = useState<
     Record<string, number>
   >({});
@@ -25,6 +44,7 @@ export default function Home() {
   const [dataSource, setDataSource] = useState<
     Record<string, string | number>[]
   >([]);
+  const [propertyChange, setPropertyChange] = useState<string>('');
   const dragStartIdx = useRef<number>(-1);
   const dragEndIdx = useRef<number>(-1);
 
@@ -35,7 +55,7 @@ export default function Home() {
     }
     const xkey = Object.keys(xInventory)[0];
     const ykeys = Object.keys(yInventory);
-    const format: Record<string, string | number>[] = [];
+    const format: Record<string, string | number | number[]>[] = [];
     const match: Record<string, number> = {};
     let cnt = 0;
     excel.forEach(item => {
@@ -46,17 +66,97 @@ export default function Home() {
         match[item[inventory.current[xkey]]] = cnt;
         idx = cnt;
         cnt++;
-        const newFormat = { [xkey]: item[inventory.current[xkey]] };
-        ykeys.forEach(item => (newFormat[item] = 0));
+        const newFormat: Record<string, string | number | number[]> = {
+          [xkey]: item[inventory.current[xkey]]
+        };
+        ykeys.forEach(item => (newFormat[item] = []));
         format.push(newFormat);
       }
-      ykeys.forEach(
-        key =>
-          (format[idx][key] =
-            Number(format[idx][key]) + Number(item[inventory.current[key]]))
+      ykeys.forEach(key =>
+        (format[idx][key] as number[]).push(
+          Number(item[inventory.current[key]])
+        )
       );
     });
-    setDataSource(format);
+
+    const final: Record<string, string | number>[] = format.map(item => {
+      ykeys.forEach(key => {
+        item[key] = item[key] as number[];
+        const Sum = item[key].reduce((a, b) => a + b, 0);
+        const Len = item[key].length;
+        const Avg = Sum / Len;
+        switch (yInventory[key][1]) {
+          case '합계':
+            item[key] = Sum;
+            break;
+          case '카운트':
+            item[key] = Len;
+            break;
+          case '고유 카운트':
+            item[key] = new Set(item[key]).size;
+            break;
+          case '최소값':
+            item[key] = Math.min(...item[key]);
+            break;
+          case '최대값':
+            item[key] = Math.max(...item[key]);
+            break;
+          case '평균':
+            item[key] = Avg;
+            break;
+          case '표준편차':
+            item[key] = Math.sqrt(
+              item[key].reduce((a, b) => a + (b - Avg) ** 2, 0) / (Len - 1)
+            );
+            break;
+          case '모집단 표준편차':
+            item[key] = Math.sqrt(
+              item[key].reduce((a, b) => a + (b - Avg) ** 2, 0) / Len
+            );
+            break;
+          case '분산':
+            item[key] =
+              item[key].reduce((a, b) => a + (b - Avg) ** 2, 0) / (Len - 1);
+            break;
+          case '모집단 분산':
+            item[key] = item[key].reduce((a, b) => a + (b - Avg) ** 2, 0) / Len;
+            break;
+          case '중간값':
+            if (Len === 0) {
+              item[key] = 0;
+              break;
+            }
+            if (Len === 1) {
+              item[key] = item[key][0];
+              break;
+            }
+            const sorted = item[key].sort((a, b) => a - b);
+            item[key] =
+              Len % 2 === 0
+                ? (sorted[Math.floor(Len / 2) - 1] +
+                    sorted[Math.floor(Len / 2)]) /
+                  2
+                : sorted[Math.floor(Len / 2)];
+            break;
+          case '최빈값':
+            const freq: Record<number, number> = {};
+            for (const num of item[key]) {
+              freq[num] = (freq[num] || 0) + 1;
+            }
+            const maxFreq = Math.max(...Object.values(freq));
+            const modes = Object.entries(freq)
+              .filter(([, v]) => v === maxFreq)
+              .map(([k]) => Number(k));
+            item[key] = modes[0];
+            break;
+          default:
+            console.error('error');
+        }
+      });
+      return item as Record<string, string | number>;
+    });
+    console.log('check graph data', final);
+    setDataSource(final);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [xInventory, yInventory]);
 
@@ -65,6 +165,7 @@ export default function Home() {
       e: DragEvent<HTMLDivElement>,
       to: 'unselected' | 'x' | 'y'
     ) => {
+      setPropertyChange('');
       const item = e.dataTransfer.getData('item');
       const from = e.dataTransfer.getData('from');
 
@@ -96,7 +197,7 @@ export default function Home() {
         const right = Object.fromEntries(total.slice(splitIdx));
         setChangeInventory({
           ...left,
-          [item]: inventory.current[item],
+          [item]: changeInventory[item],
           ...right
         });
         dragStartIdx.current = -1;
@@ -146,13 +247,13 @@ export default function Home() {
             const right = Object.fromEntries(total.slice(dragEndIdx.current));
             setYInventory({
               ...left,
-              [item]: inventory.current[item],
+              [item]: [inventory.current[item], '합계'],
               ...right
             });
           } else
             setYInventory(prev => ({
               ...prev,
-              [item]: inventory.current[item]
+              [item]: [inventory.current[item], '합계']
             }));
           break;
         default:
@@ -204,6 +305,20 @@ export default function Home() {
       dragStartIdx.current = idx;
     };
 
+    function handlePropertyChange(e: ChangeEvent<HTMLSelectElement>) {
+      setYInventory(prev => ({
+        ...prev,
+        [propertyChange]: [
+          prev[propertyChange][0],
+          e.target.value as PropertyType
+        ]
+      }));
+    }
+
+    function settingOpen(name: string) {
+      setPropertyChange(name);
+    }
+
     return (
       <div className={styles.inventoryBox}>
         <div
@@ -253,15 +368,43 @@ export default function Home() {
               <div
                 key={item}
                 className={styles.inventoryItem}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
                 draggable
                 onDragStart={e => onDragStart(e, item, 'y', idx)}
                 onDragEnter={() => onDragEnter(idx)}
               >
-                {item}
+                <div>{item}</div>
+                <h5 style={{ color: 'red' }} onClick={() => settingOpen(item)}>
+                  set
+                </h5>
               </div>
             ))}
           </div>
         </div>
+        {propertyChange !== '' ? (
+          <div>
+            <select
+              defaultValue={yInventory[propertyChange][1]}
+              onChange={handlePropertyChange}
+            >
+              {NumberProperty.map(item => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+            <h3
+              onClick={() => setPropertyChange('')}
+              style={{ color: 'red', cursor: 'pointer' }}
+            >
+              X
+            </h3>
+          </div>
+        ) : null}
       </div>
     );
   }
