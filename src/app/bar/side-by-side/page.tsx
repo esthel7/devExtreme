@@ -46,6 +46,7 @@ export default function Home() {
     Record<string, string | number>[]
   >([]);
   const [propertyChange, setPropertyChange] = useState<string>('');
+  const nameChange = useRef<HTMLInputElement>(null);
   const dragStartIdx = useRef<number>(-1);
   const dragEndIdx = useRef<number>(-1);
 
@@ -86,7 +87,7 @@ export default function Home() {
         const Sum = item[key].reduce((a, b) => a + b, 0);
         const Len = item[key].length;
         const Avg = Sum / Len;
-        switch (yInventory[key][1]) {
+        switch (yInventory[key][2]) {
           case '합계':
             item[key] = Sum;
             break;
@@ -253,13 +254,13 @@ export default function Home() {
             const right = Object.fromEntries(total.slice(dragEndIdx.current));
             setYInventory({
               ...left,
-              [item]: [inventory.current[item], '합계'],
+              [item]: [item, inventory.current[item], '합계'],
               ...right
             });
           } else
             setYInventory(prev => ({
               ...prev,
-              [item]: [inventory.current[item], '합계']
+              [item]: [item, inventory.current[item], '합계']
             }));
           break;
         default:
@@ -319,7 +320,8 @@ export default function Home() {
       setYInventory(prev => ({
         ...prev,
         [propertyChange]: [
-          prev[propertyChange][0],
+          prev[propertyChange][0], // alias
+          prev[propertyChange][1], // value
           e.target.value as PropertyType
         ]
       }));
@@ -327,6 +329,17 @@ export default function Home() {
 
     function settingOpen(name: string) {
       setPropertyChange(name);
+    }
+
+    function handleNameChange() {
+      const newName = nameChange.current?.value as string;
+      const prevValue = yInventory[propertyChange].slice(1);
+      const prevInventory = yInventory;
+      delete prevInventory[propertyChange];
+      setYInventory({
+        ...prevInventory,
+        [propertyChange]: [newName, ...prevValue]
+      });
     }
 
     return (
@@ -395,7 +408,9 @@ export default function Home() {
                 onDragStart={e => onDragStart(e, item, 'y', idx)}
                 onDragEnter={() => onDragEnter(idx)}
               >
-                <div>{item}</div>
+                <div>
+                  {yInventory[item][0]} ({yInventory[item][2]})
+                </div>
                 <h5 style={{ color: 'red' }} onClick={() => settingOpen(item)}>
                   set
                 </h5>
@@ -409,6 +424,7 @@ export default function Home() {
         </div>
         {propertyChange !== '' ? (
           <div>
+            <h5>계산 속성 선택</h5>
             <select
               defaultValue={yInventory[propertyChange][1]}
               onChange={handlePropertyChange}
@@ -419,6 +435,16 @@ export default function Home() {
                 </option>
               ))}
             </select>
+            <h5>이름 변경</h5>
+            <div>
+              <input type="text" ref={nameChange} />
+              <h4
+                onClick={handleNameChange}
+                style={{ color: 'red', cursor: 'pointer' }}
+              >
+                name change
+              </h4>
+            </div>
             <h3
               onClick={() => setPropertyChange('')}
               style={{ color: 'red', cursor: 'pointer' }}
@@ -467,7 +493,7 @@ export default function Home() {
             key={item}
             valueField={item} // y value
             argumentField={Object.keys(xInventory).join('/')} // x value
-            name={item}
+            name={yInventory[item][0]}
           />
         ))}
 
