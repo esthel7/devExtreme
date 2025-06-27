@@ -430,11 +430,6 @@ export default function Home() {
               <div
                 key={item}
                 className={styles.inventoryItem}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
                 draggable
                 onDragStart={e => onDragStart(e, item, 'y', idx)}
                 onDragEnter={() => onDragEnter(idx)}
