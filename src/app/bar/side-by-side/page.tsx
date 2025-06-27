@@ -12,7 +12,15 @@ import {
   Tooltip,
   ZoomAndPan
 } from 'devextreme-react/chart';
-import { DragEvent, ChangeEvent, useEffect, useRef, useState } from 'react';
+import {
+  DragEvent,
+  ChangeEvent,
+  useEffect,
+  useRef,
+  useState,
+  Dispatch,
+  SetStateAction
+} from 'react';
 import { handleFileUpload } from '@/utils/handleFileUpload';
 import styles from '@/app/page.module.css';
 
@@ -32,15 +40,15 @@ const NumberProperty = [
 ] as const;
 
 type PropertyType = (typeof NumberProperty)[number];
+type Inventory = Record<string, (string | number)[]>;
+type SetInventory = Dispatch<SetStateAction<Inventory>>;
 
 export default function Home() {
   const inventory = useRef<Record<string, number>>({});
-  const [xInventory, setXInventory] = useState<Record<string, string>>({});
-  const [yInventory, setYInventory] = useState<
-    Record<string, (number | string)[]>
-  >({});
+  const [xInventory, setXInventory] = useState<Record<string, string[]>>({});
+  const [yInventory, setYInventory] = useState<Inventory>({});
   const [seriesInventory, setSeriesInventory] = useState<
-    Record<string, string>
+    Record<string, string[]>
   >({});
   const [remainInventory, setRemainInventory] = useState<
     Record<string, number>
@@ -246,13 +254,13 @@ export default function Home() {
             const right = Object.fromEntries(total.slice(dragEndIdx.current));
             setXInventory({
               ...left,
-              [item]: String(inventory.current[item]),
+              [item]: [item, String(inventory.current[item])],
               ...right
             });
           } else
             setXInventory(prev => ({
               ...prev,
-              [item]: String(inventory.current[item])
+              [item]: [item, String(inventory.current[item])]
             }));
           break;
         case 'y':
@@ -278,13 +286,13 @@ export default function Home() {
             const right = Object.fromEntries(total.slice(dragEndIdx.current));
             setSeriesInventory({
               ...left,
-              [item]: String(inventory.current[item]),
+              [item]: [item, String(inventory.current[item])],
               ...right
             });
           } else
             setSeriesInventory(prev => ({
               ...prev,
-              [item]: String(inventory.current[item])
+              [item]: [item, String(inventory.current[item])]
             }));
           break;
         default:
@@ -364,13 +372,24 @@ export default function Home() {
 
     function handleNameChange() {
       const newName = nameChange.current?.value as string;
-      const prevValue = yInventory[propertyChange].slice(1);
-      const prevInventory = yInventory;
-      delete prevInventory[propertyChange];
-      setYInventory({
-        ...prevInventory,
-        [propertyChange]: [newName, ...prevValue]
-      });
+      let inventoryState: Inventory;
+      let setInventoryState: SetInventory;
+      if (Object.prototype.hasOwnProperty.call(xInventory, propertyChange)) {
+        inventoryState = xInventory;
+        setInventoryState = setXInventory as SetInventory;
+      } else if (
+        Object.prototype.hasOwnProperty.call(yInventory, propertyChange)
+      ) {
+        inventoryState = yInventory;
+        setInventoryState = setYInventory as SetInventory;
+      } else {
+        inventoryState = seriesInventory;
+        setInventoryState = setSeriesInventory as SetInventory;
+      }
+      const prevValue = inventoryState[propertyChange].slice(1);
+      const prevInventory = { ...inventoryState };
+      prevInventory[propertyChange] = [newName, ...prevValue];
+      setInventoryState(prevInventory);
     }
 
     return (
@@ -412,7 +431,10 @@ export default function Home() {
                 onDragStart={e => onDragStart(e, item, 'x', idx)}
                 onDragEnter={() => onDragEnter(idx)}
               >
-                {item}
+                <div>{xInventory[item][0]}</div>
+                <h5 style={{ color: 'red' }} onClick={() => settingOpen(item)}>
+                  set
+                </h5>
               </div>
             ))}
             <div
@@ -461,7 +483,10 @@ export default function Home() {
                 onDragStart={e => onDragStart(e, item, 'series', idx)}
                 onDragEnter={() => onDragEnter(idx)}
               >
-                {item}
+                <div>{seriesInventory[item][0]}</div>
+                <h5 style={{ color: 'red' }} onClick={() => settingOpen(item)}>
+                  set
+                </h5>
               </div>
             ))}
             <div
@@ -474,20 +499,28 @@ export default function Home() {
         </div>
         {propertyChange !== '' ? (
           <div>
-            <h5>계산 속성 선택</h5>
-            <select
-              defaultValue={yInventory[propertyChange][1]}
-              onChange={handlePropertyChange}
-            >
-              {NumberProperty.map(item => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
+            {Object.keys(yInventory).includes(propertyChange) ? (
+              <>
+                <h5>계산 속성 선택</h5>
+                <select
+                  defaultValue={yInventory[propertyChange][2]}
+                  onChange={handlePropertyChange}
+                >
+                  {NumberProperty.map(item => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </>
+            ) : null}
             <h5>이름 변경</h5>
             <div>
-              <input type="text" ref={nameChange} />
+              <input
+                type="text"
+                ref={nameChange}
+                placeholder={propertyChange}
+              />
               <h4
                 onClick={handleNameChange}
                 style={{ color: 'red', cursor: 'pointer' }}
@@ -515,8 +548,14 @@ export default function Home() {
     point: any;
   }) {
     const keys = Object.keys(arg.point.data);
+    const xName = Object.keys(seriesInventory)
+      .concat(Object.keys(xInventory))
+      .join('/');
     const texts = keys
-      .map(item => `<br />${item}: ${arg.point.data[item]}`)
+      .map(item => {
+        if (xName.includes(item)) return `<br />${arg.point.data[item]}`;
+        return `<br />${item}: ${arg.point.data[item]}`;
+      })
       .join('');
     return Object.keys(seriesInventory).length
       ? { text: `${texts}` }

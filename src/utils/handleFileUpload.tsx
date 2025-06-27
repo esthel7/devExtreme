@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 type StringState = Dispatch<SetStateAction<Record<string, string>>>;
 type NumberState = Dispatch<SetStateAction<Record<string, number>>>;
 type DateState = Dispatch<SetStateAction<Record<string, Date>>>;
+type StringsState = Dispatch<SetStateAction<Record<string, string[]>>>;
 type StringNumberState = Dispatch<
   SetStateAction<Record<string, (string | number)[]>>
 >;
@@ -19,7 +20,13 @@ export function handleFileUpload(
   inventory: RefObject<Record<string, number>>,
   setInventory: NumberState,
   setExcel: Dispatch<SetStateAction<(string | number)[][]>>,
-  emptyInventory: (StringState | NumberState | DateState | StringNumberState)[]
+  emptyInventory: (
+    | StringState
+    | NumberState
+    | DateState
+    | StringsState
+    | StringNumberState
+  )[]
 ) {
   const file = e.target.files?.[0];
   if (!file) return;
